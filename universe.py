@@ -59,14 +59,24 @@ def _chunk(seq, size):
 def _candidate_symbols(max_candidates: int) -> List[str]:
     key, secret, paper = _env_creds()
     client = TradingClient(key, secret, paper=paper)
-    assets = client.get_all_assets(status="active", asset_class="us_equity")
+    try:
+        assets = client.get_all_assets()
+    except TypeError:
+        # older SDKs expect positional args (status, asset_class)
+        assets = client.get_all_assets("active", "us_equity")
+
     symbols = []
     for asset in assets:
-        if not asset.tradable:
+        if getattr(asset, "status", "") != "active":
             continue
-        if getattr(asset, "symbol", "").startswith("$"):
+        if getattr(asset, "asset_class", "") != "us_equity":
             continue
-        symbols.append(asset.symbol)
+        if not getattr(asset, "tradable", False):
+            continue
+        sym = getattr(asset, "symbol", "")
+        if not sym or sym.startswith("$"):
+            continue
+        symbols.append(sym)
         if len(symbols) >= max_candidates:
             break
     return symbols
