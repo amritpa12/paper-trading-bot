@@ -1,0 +1,24 @@
+symbols:
+  - SPY
+  - QQQ
+  - AAPL
+  - MSFT
+  - NVDA
+interval_minutes: 1
+lookback_days: 10
+max_positions: 5
+risk:
+  per_trade_risk_pct: 0.02   # 1-2% rule
+  stop_loss_pct: 0.03        # 3% stop
+  take_profit_pct: 0.05      # 5% target
+  max_daily_loss_pct: 0.07   # 7% max daily loss
+selector:
+  score_window_bars: 200
+  min_score: 0.0
+strategies:
+  - name: trend_ema
+    enabled: true
+  - name: mean_reversion_rsi
+    enabled: true
+  - name: breakout_orb
+    enabled: true
