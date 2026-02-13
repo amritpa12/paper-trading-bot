@@ -27,6 +27,12 @@ python main.py
 python dashboard.py
 ```
 
+## Web GUI
+```bash
+python dashboard_web.py
+# open http://localhost:5050
+```
+
 ## Files
 - `main.py` — orchestrates loop
 - `broker.py` — Alpaca trading wrapper

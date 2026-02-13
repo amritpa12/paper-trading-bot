@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paper Trading Bot Dashboard</title>
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; background: #0b0f14; color: #e2e8f0; margin: 0; }
+    header { padding: 16px 24px; background: #0f172a; border-bottom: 1px solid #1f2937; }
+    .container { padding: 24px; max-width: 1100px; margin: 0 auto; }
+    .card { background: #121821; border: 1px solid #1f2937; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #1f2937; font-size: 14px; }
+    .muted { color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <header><strong>Paper Trading Bot Dashboard</strong></header>
+  <div class="container">
+    <div class="card" id="status"></div>
+    <div class="card" id="daily"></div>
+    <div class="card">
+      <h3>Strategy Performance</h3>
+      <div id="strategies" class="muted">Loading...</div>
+    </div>
+    <div class="card">
+      <h3>Recent Trades</h3>
+      <div id="trades" class="muted">Loading...</div>
+    </div>
+  </div>
+
+<script>
+async function load() {
+  const [status, daily, strategies, trades] = await Promise.all([
+    fetch('/api/status').then(r => r.json()),
+    fetch('/api/daily').then(r => r.json()),
+    fetch('/api/strategies').then(r => r.json()),
+    fetch('/api/trades').then(r => r.json())
+  ]);
+
+  document.getElementById('status').innerHTML = `
+    <h3>Status</h3>
+    <div>State: <b>${status.state || 'idle'}</b></div>
+    <div class="muted">Last action: ${status.last_action || 'n/a'}</div>
+  `;
+
+  document.getElementById('daily').innerHTML = `
+    <h3>Daily PnL</h3>
+    <div>Total: <b>${(daily.total_pnl || 0).toFixed(2)}</b></div>
+    <div class="muted">Trades: ${daily.trades || 0} | Win rate: ${Math.round((daily.win_rate || 0)*100)}%</div>
+  `;
+
+  if (!strategies.length) {
+    document.getElementById('strategies').innerText = 'No strategy stats yet.';
+  } else {
+    let html = '<table><tr><th>Strategy</th><th>Trades</th><th>Total PnL</th><th>Avg PnL</th><th>Win Rate</th></tr>';
+    for (const s of strategies) {
+      html += `<tr><td>${s.strategy}</td><td>${s.trades}</td><td>${Number(s.total_pnl).toFixed(2)}</td><td>${Number(s.avg_pnl).toFixed(2)}</td><td>${Math.round(s.win_rate*100)}%</td></tr>`;
+    }
+    html += '</table>';
+    document.getElementById('strategies').innerHTML = html;
+  }
+
+  if (!trades.length) {
+    document.getElementById('trades').innerText = 'No trades yet.';
+  } else {
+    let html = '<table><tr><th>Date</th><th>Symbol</th><th>Strategy</th><th>Side</th><th>Qty</th><th>Entry</th><th>Exit</th><th>PnL</th></tr>';
+    for (const t of trades) {
+      html += `<tr><td>${t.date}</td><td>${t.symbol}</td><td>${t.strategy}</td><td>${t.side}</td><td>${t.qty}</td><td>${Number(t.entry).toFixed(2)}</td><td>${Number(t.exit).toFixed(2)}</td><td>${Number(t.pnl).toFixed(2)}</td></tr>`;
+    }
+    html += '</table>';
+    document.getElementById('trades').innerHTML = html;
+  }
+}
+
+load();
+setInterval(load, 5000);
+</script>
+</body>
+</html>

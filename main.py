@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import pytz
 from dotenv import load_dotenv
 import yaml
+import json
 
 from broker import AlpacaBroker
 from data import AlpacaData
@@ -36,6 +37,16 @@ data = AlpacaData()
 start_equity = None
 
 LOG_FILE = "trades.csv"
+STATUS_FILE = "status.json"
+
+
+def write_status(state, last_action=None):
+    payload = {
+        "state": state,
+        "last_action": last_action,
+    }
+    with open(STATUS_FILE, "w") as f:
+        f.write(json.dumps(payload))
 
 
 def log_trade(date, symbol, strategy, side, qty, entry, exit_price, pnl):
@@ -78,6 +89,7 @@ def main_loop():
     while True:
         dt = now_et()
         if not market_open(dt):
+            write_status("idle", "Market closed")
             # print daily summary once after close
             if dt.hour >= 16:
                 today = dt.date().isoformat()
@@ -111,6 +123,7 @@ def main_loop():
                 min_score=selector_cfg["min_score"],
             )
             if strat is None:
+                write_status("running", f"No strategy selected for {symbol}")
                 continue
 
             # get signal from chosen strategy
@@ -127,6 +140,7 @@ def main_loop():
                 )
                 if qty > 0:
                     broker.submit_market_order(symbol, qty, "buy")
+                    write_status("running", f"BUY {symbol} x{qty} via {strat}")
                     print(f"BUY {symbol} x{qty} via {strat}")
 
             if sig == "sell" and symbol in held:
@@ -136,6 +150,7 @@ def main_loop():
                 broker.close_position(symbol)
                 pnl = (last_price - entry) * qty
                 log_trade(dt.date().isoformat(), symbol, strat, "sell", qty, entry, last_price, pnl)
+                write_status("running", f"SELL {symbol} via {strat} | PnL {pnl:.2f}")
                 print(f"SELL {symbol} via {strat} | PnL {pnl:.2f}")
 
         time.sleep(interval_minutes * 60)
