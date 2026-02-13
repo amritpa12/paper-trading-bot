@@ -63,13 +63,14 @@ def _candidate_symbols(max_candidates: int) -> List[str]:
         assets = client.get_all_assets()
     except TypeError:
         assets = client.get_all_assets("active", "us_equity")
-    except Exception:
-        # fall back to equities helper (returns only equities)
-        assets = client.get_all_equities(status="active")
+    except AttributeError:
+        assets = client.get_all_assets("active", "us_equity")
+    except Exception as exc:
+        raise RuntimeError(f"Unable to load assets from Alpaca: {exc}")
 
     symbols = []
     for asset in assets:
-        if getattr(asset, "status", "") != "active":
+        if getattr(asset, "status", "") not in {"active", "online"}:
             continue
         asset_class = getattr(asset, "asset_class", "")
         if asset_class and asset_class != "us_equity":
