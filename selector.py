@@ -15,7 +15,7 @@ def backtest_score(df, strategy_name, window=200):
     if len(df) < 30:
         return -1.0
 
-    pnl = 0.0
+    pnl_pct = 0.0
     position = None
     entry = 0.0
 
@@ -27,11 +27,12 @@ def backtest_score(df, strategy_name, window=200):
         if position is None and sig == "buy":
             position = "long"
             entry = price
-        elif position == "long" and sig == "sell":
-            pnl += (price - entry)
+        elif position == "long" and sig == "sell" and entry > 0:
+            pnl_pct += (price - entry) / entry
             position = None
+            entry = 0.0
 
-    return pnl
+    return pnl_pct
 
 
 def pick_strategy(df, enabled, window=200, min_score=0.0):
