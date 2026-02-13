@@ -62,16 +62,22 @@ def _candidate_symbols(max_candidates: int) -> List[str]:
     try:
         assets = client.get_all_assets()
     except TypeError:
-        # older SDKs expect positional args (status, asset_class)
         assets = client.get_all_assets("active", "us_equity")
+    except Exception:
+        # fall back to equities helper (returns only equities)
+        assets = client.get_all_equities(status="active")
 
     symbols = []
     for asset in assets:
         if getattr(asset, "status", "") != "active":
             continue
-        if getattr(asset, "asset_class", "") != "us_equity":
+        asset_class = getattr(asset, "asset_class", "")
+        if asset_class and asset_class != "us_equity":
             continue
         if not getattr(asset, "tradable", False):
+            continue
+        exchange = getattr(asset, "exchange", "")
+        if exchange and exchange not in {"AMEX", "ARCA", "BATS", "NYSE", "NASDAQ", "NYSEARCA"}:
             continue
         sym = getattr(asset, "symbol", "")
         if not sym or sym.startswith("$"):
