@@ -22,6 +22,11 @@ copy .env.example .env
 python main.py
 ```
 
+## Dashboard
+```bash
+python dashboard.py
+```
+
 ## Files
 - `main.py` — orchestrates loop
 - `broker.py` — Alpaca trading wrapper

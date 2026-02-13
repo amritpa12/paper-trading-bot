@@ -9,6 +9,8 @@ from broker import AlpacaBroker
 from data import AlpacaData
 from selector import pick_strategy
 from risk import position_size, exceeded_daily_loss
+from stats import daily_summary
+import csv
 
 load_dotenv()
 
@@ -33,6 +35,22 @@ data = AlpacaData()
 
 start_equity = None
 
+LOG_FILE = "trades.csv"
+
+
+def log_trade(date, symbol, strategy, side, qty, entry, exit_price, pnl):
+    header = ["date", "symbol", "strategy", "side", "qty", "entry", "exit", "pnl"]
+    row = [date, symbol, strategy, side, qty, entry, exit_price, pnl]
+    try:
+        with open(LOG_FILE, "x", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+            writer.writerow(row)
+    except FileExistsError:
+        with open(LOG_FILE, "a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(row)
+
 
 def now_et():
     return datetime.now(TZ)
@@ -55,10 +73,19 @@ def main_loop():
     global start_equity
     acct = broker.account()
     start_equity = float(acct.equity)
+    last_summary_date = None
 
     while True:
         dt = now_et()
         if not market_open(dt):
+            # print daily summary once after close
+            if dt.hour >= 16:
+                today = dt.date().isoformat()
+                if last_summary_date != today:
+                    summary = daily_summary(today)
+                    if summary:
+                        print(f"Daily PnL {summary['date']}: {summary['total_pnl']:.2f} | Trades {summary['trades']} | Win {summary['win_rate']:.0%}")
+                    last_summary_date = today
             time.sleep(60)
             continue
 
@@ -103,8 +130,13 @@ def main_loop():
                     print(f"BUY {symbol} x{qty} via {strat}")
 
             if sig == "sell" and symbol in held:
+                pos = held[symbol]
+                entry = float(pos.avg_entry_price)
+                qty = abs(int(float(pos.qty)))
                 broker.close_position(symbol)
-                print(f"SELL {symbol} via {strat}")
+                pnl = (last_price - entry) * qty
+                log_trade(dt.date().isoformat(), symbol, strat, "sell", qty, entry, last_price, pnl)
+                print(f"SELL {symbol} via {strat} | PnL {pnl:.2f}")
 
         time.sleep(interval_minutes * 60)
 
