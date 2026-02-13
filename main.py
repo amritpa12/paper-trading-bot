@@ -11,6 +11,7 @@ from data import AlpacaData
 from selector import pick_strategy
 from risk import position_size, exceeded_daily_loss
 from stats import daily_summary
+from universe import load_symbol_universe
 import csv
 
 load_dotenv()
@@ -20,7 +21,10 @@ TZ = pytz.timezone(os.getenv("TIMEZONE", "America/New_York"))
 with open("config.yaml", "r") as f:
     cfg = yaml.safe_load(f)
 
-symbols = cfg["symbols"]
+symbols = load_symbol_universe(
+    cfg.get("dynamic_universe", {}),
+    cfg["symbols"],
+)
 interval_minutes = cfg["interval_minutes"]
 lookback_days = cfg["lookback_days"]
 max_positions = cfg["max_positions"]

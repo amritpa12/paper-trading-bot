@@ -7,6 +7,14 @@ symbols:
 interval_minutes: 1
 lookback_days: 10
 max_positions: 5
+dynamic_universe:
+  enabled: true
+  max_symbols: 5
+  max_candidates: 200
+  min_price: 5
+  max_price: 500
+  lookback_days: 5
+  cache_minutes: 60
 risk:
   per_trade_risk_pct: 0.02   # 1-2% rule
   stop_loss_pct: 0.03        # 3% stop

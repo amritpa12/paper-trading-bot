@@ -40,7 +40,9 @@ python dashboard_web.py
 - `strategies/` — strategy signals
 - `selector.py` — picks the best strategy per symbol
 - `risk.py` — position sizing + stops + daily loss guard
+- `universe.py` — optional dynamic symbol selection (top-volume, price-filtered via Alpaca)
 
 ## Notes
 - This is a learning/paper bot. No guarantee of performance.
 - You can edit `config.yaml` to change symbols and risk settings.
+- Enable `dynamic_universe` in `config.yaml` to let the bot auto-pick high-volume symbols within your price range each day.
